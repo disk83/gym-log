@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Manage } from './manage/Manage'
 import { ScreenHeader } from './manage/ui'
+import { HomeTab, type HomeView } from './session/HomeTab'
 
 type Tab = 'home' | 'history' | 'manage'
 
@@ -24,6 +25,8 @@ function initialTab(): Tab {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(initialTab)
+  // Kept here so switching tabs mid-session returns to the same screen.
+  const [homeView, setHomeView] = useState<HomeView>({ screen: 'home' })
 
   function select(next: Tab) {
     setTab(next)
@@ -38,7 +41,7 @@ export default function App() {
   return (
     <>
       <main className="shell">
-        {tab === 'home' && <Placeholder title="Gym Log" text="Sessions arrive in the next build step." />}
+        {tab === 'home' && <HomeTab view={homeView} setView={setHomeView} />}
         {tab === 'history' && <Placeholder title="History" text="Past sessions arrive in a later build step." />}
         {tab === 'manage' && <Manage />}
       </main>

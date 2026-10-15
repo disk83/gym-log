@@ -43,22 +43,28 @@ export function PickerSheet({
   emptyText,
   onPick,
   onClose,
+  closeLabel = 'Done',
+  top,
 }: {
   title: string
   items: { id: string; label: string; detail?: string }[]
   emptyText: string
   onPick: (id: string) => void
   onClose: () => void
+  closeLabel?: string
+  /** Shown above the list, e.g. a "create new" button. */
+  top?: ReactNode
 }) {
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
       <div className="sheet-header">
         <h2>{title}</h2>
         <button type="button" className="btn btn-primary" onClick={onClose}>
-          Done
+          {closeLabel}
         </button>
       </div>
       <div className="sheet-body">
+        {top}
         {items.length === 0 ? (
           <p className="muted">{emptyText}</p>
         ) : (
