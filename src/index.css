@@ -4,27 +4,456 @@
   background: #111827;
   color: #f9fafb;
   -webkit-text-size-adjust: 100%;
+  --bg: #111827;
+  --surface: #1f2937;
+  --surface-2: #374151;
+  --border: #374151;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --accent: #22c55e;
+  --accent-text: #052e16;
+  --danger: #f87171;
+  --tabbar-h: 64px;
+  --tap: 48px;
 }
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
-  background: #111827;
+  background: var(--bg);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 .shell {
-  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px
+    calc(env(safe-area-inset-bottom) + var(--tabbar-h) + 24px);
 }
 
 h1 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 1.75rem;
 }
 
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
 .muted {
-  color: #9ca3af;
+  color: var(--muted);
+}
+
+/* ---------- Header ---------- */
+
+.screen-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  min-height: var(--tap);
+  margin-left: -8px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+/* ---------- Bottom tab bar ---------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #0b1220;
+  border-top: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  min-height: var(--tabbar-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.tab.on {
+  color: var(--accent);
+}
+
+.tab-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  min-height: var(--tap);
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.btn:active,
+.row:active,
+.seg:active {
+  filter: brightness(1.25);
+}
+
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-danger {
+  border-color: var(--danger);
+  background: none;
+  color: var(--danger);
+}
+
+.btn-wide {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.btn-small {
+  flex: none;
+  padding: 0 14px;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.seg {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.seg.on {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.tabs-segmented {
+  margin-bottom: 8px;
+}
+
+/* ---------- Lists ---------- */
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li + li {
+  margin-top: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.row-with-action {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.row-with-action .row {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.row-sub {
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.chevron,
+.row-add {
+  color: var(--muted);
+  font-size: 1.5rem;
+}
+
+.row-add {
+  color: var(--accent);
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.75rem;
+  vertical-align: 2px;
+}
+
+.archived {
+  margin-top: 24px;
+}
+
+.archived-toggle {
+  width: 100%;
+  min-height: var(--tap);
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.field-label {
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  /* 16px or more stops iOS from zooming on focus. */
+  font-size: 17px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.notice {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.notice-ok {
+  color: var(--accent);
+}
+
+.errors {
+  margin: 0;
+  padding: 10px 14px 10px 30px;
+  border-radius: 10px;
+  background: #3f1d1d;
+  color: #fecaca;
+}
+
+p.errors {
+  padding-left: 14px;
+}
+
+/* ---------- Sortable list ---------- */
+
+.sortable {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sortable-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 60px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.sortable-row.dragging {
+  z-index: 5;
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+
+.drag-handle {
+  flex: none;
+  width: 52px;
+  align-self: stretch;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  /* Let the pointer sensor own touches on the handle; rows still scroll. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.sortable-pos {
+  flex: none;
+  width: 22px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sortable-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.remove-btn {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* ---------- Picker sheet ---------- */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px);
+  -webkit-overflow-scrolling: touch;
 }
