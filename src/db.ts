@@ -51,6 +51,8 @@ export interface Session {
   routineId: string | null
   /** The active cycle when the session started; null if none was active. */
   cycleId: string | null
+  /** Exercises added during the session that are not in its routine, in the order added. */
+  extraExerciseIds?: string[]
 }
 
 export interface Log {

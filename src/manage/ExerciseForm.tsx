@@ -66,7 +66,16 @@ function toInput(d: Draft): ExerciseInput | string[] {
   return input
 }
 
-export function ExerciseForm({ id, onDone }: { id?: string; onDone: () => void }) {
+export function ExerciseForm({
+  id,
+  onDone,
+  title,
+}: {
+  id?: string
+  /** Called with the saved exercise's id after a save, without one otherwise. */
+  onDone: (savedId?: string) => void
+  title?: string
+}) {
   const [existing, setExisting] = useState<Exercise | null | undefined>(id ? undefined : null)
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const [initial, setInitial] = useState<Draft>(EMPTY)
@@ -87,7 +96,7 @@ export function ExerciseForm({ id, onDone }: { id?: string; onDone: () => void }
   if (id && !existing) {
     return (
       <>
-        <ScreenHeader title="Exercise" onBack={onDone} />
+        <ScreenHeader title="Exercise" onBack={() => onDone()} />
         <p className="muted">This exercise no longer exists.</p>
       </>
     )
@@ -103,9 +112,9 @@ export function ExerciseForm({ id, onDone }: { id?: string; onDone: () => void }
       setErrors(result)
       return
     }
+    const savedId = existing ? existing.id : await createExercise(result)
     if (existing) await updateExercise(existing.id, result)
-    else await createExercise(result)
-    onDone()
+    onDone(savedId)
   }
 
   async function toggleArchive() {
@@ -124,7 +133,7 @@ export function ExerciseForm({ id, onDone }: { id?: string; onDone: () => void }
   return (
     <form onSubmit={save} noValidate>
       <ScreenHeader
-        title={existing ? 'Edit exercise' : 'New exercise'}
+        title={title ?? (existing ? 'Edit exercise' : 'New exercise')}
         onBack={() => confirmDiscard(dirty) && onDone()}
       />
       {existing?.archived && <p className="notice">This exercise is archived.</p>}
