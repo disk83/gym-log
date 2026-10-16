@@ -8,7 +8,7 @@ npm install
 npm run dev      # http://localhost:5173/gym-log/
 npm run build    # typecheck + production build into dist/
 npm run preview  # serve the production build (service worker active)
-npm test         # data-layer unit tests (Vitest + fake-indexeddb)
+npm test         # unit tests (Vitest + fake-indexeddb)
 ```
 
 ## Deploy

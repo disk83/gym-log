@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import { backupReminderDue, getLastExport } from '../backup'
 import { db } from '../db'
 import { ExerciseForm } from '../manage/ExerciseForm'
 import { byName } from '../manage/format'
@@ -154,6 +155,7 @@ function Home({ onStarted }: { onStarted: () => void }) {
   return (
     <>
       <ScreenHeader title="Gym Log" />
+      <BackupBanner />
       {!data.cycle && (
         <p className="notice">No active cycle. Set one in Manage → Cycles. You can still start a free session.</p>
       )}
@@ -212,6 +214,20 @@ function Home({ onStarted }: { onStarted: () => void }) {
         <p className="muted">No finished sessions yet.</p>
       )}
     </>
+  )
+}
+
+/** Reminder to export a backup if none was done or the last is older than 30 days. */
+function BackupBanner() {
+  const last = getLastExport()
+  if (!backupReminderDue(last)) return null
+  return (
+    <p className="notice notice-warn" role="status">
+      {last
+        ? `Your last backup was ${Math.floor((Date.now() - Date.parse(last)) / 86_400_000)} days ago.`
+        : 'You have not exported a backup yet.'}{' '}
+      Export one in Manage → Report.
+    </p>
   )
 }
 

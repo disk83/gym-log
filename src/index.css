@@ -589,3 +589,42 @@ p.errors {
 .row:disabled {
   opacity: 0.6;
 }
+
+/* ---------- Report and backup ---------- */
+
+.field-row-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.section-title-first {
+  margin-top: 8px;
+}
+
+.notice-warn {
+  margin: 0 0 16px;
+  border-left: 4px solid #f59e0b;
+  color: var(--text);
+}
+
+.file-card,
+.confirm-card {
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.confirm-card {
+  border: 1px solid var(--danger);
+}
+
+.confirm-warning {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.backup-last {
+  margin: 0 0 4px;
+}
+
+.storage-status {
+  margin-top: 24px;
+}

@@ -14,10 +14,11 @@ import {
 } from '../data'
 import { ExerciseForm } from './ExerciseForm'
 import { OrderedForm } from './OrderedForm'
+import { ReportScreen } from './ReportScreen'
 import { byName, exerciseSummary } from './format'
 import { ArchivedSection, ScreenHeader } from './ui'
 
-type Section = 'exercises' | 'routines' | 'cycles'
+type Section = 'exercises' | 'routines' | 'cycles' | 'report'
 
 /** What the Manage tab shows: a list, or the form for one item (id undefined = new). */
 type View = { section: Section; editing?: { id?: string } }
@@ -26,6 +27,7 @@ const SECTIONS: [Section, string][] = [
   ['exercises', 'Exercises'],
   ['routines', 'Routines'],
   ['cycles', 'Cycles'],
+  ['report', 'Report'],
 ]
 
 export function Manage() {
@@ -66,6 +68,7 @@ export function Manage() {
       {view.section === 'exercises' && <ExerciseList onOpen={open} />}
       {view.section === 'routines' && <RoutineList onOpen={open} />}
       {view.section === 'cycles' && <CycleList onOpen={open} />}
+      {view.section === 'report' && <ReportScreen />}
     </>
   )
 }
