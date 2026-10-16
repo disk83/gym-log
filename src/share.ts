@@ -23,7 +23,8 @@ export function downloadFile(file: File): void {
 export async function shareOrDownload(file: File): Promise<ShareOutcome> {
   if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: file.name })
+      // Files only: on iOS a title or text is shared as an extra .txt item.
+      await navigator.share({ files: [file] })
       return 'shared'
     } catch (e) {
       // The user closed the share sheet: not a failure, nothing to fall back to.
