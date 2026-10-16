@@ -1,4 +1,3 @@
-import Dexie from 'dexie'
 import { db, type Cycle, type Exercise, type Log, type Routine, type Session } from './db'
 
 // Session flow (spec section 3). The pure helpers are exported for tests;
@@ -96,6 +95,42 @@ export function isRoutineComplete(
   })
 }
 
+export interface LastLog {
+  log: Log
+  /** Start of the log's session: the date "Last time" shows. */
+  date: string
+}
+
+export interface LastLogOptions {
+  /** Ignore the logs of this session. */
+  excludeSessionId?: string
+  /** Only consider sessions that started before this ISO date. */
+  before?: string
+}
+
+/**
+ * The most recent of `logs` by the date of its session, not by when it was
+ * saved, so editing or adding a log to an old session never makes it "last
+ * time". Logs of the same session fall back to save order. Logs whose session
+ * is missing are ignored.
+ */
+export function pickLastLog(
+  logs: readonly Log[],
+  sessions: ReadonlyMap<string, Session>,
+  { excludeSessionId, before }: LastLogOptions = {},
+): LastLog | undefined {
+  let best: LastLog | undefined
+  for (const log of logs) {
+    const session = sessions.get(log.sessionId)
+    if (!session || session.id === excludeSessionId) continue
+    if (before != null && session.startedAt >= before) continue
+    const newer =
+      !best || session.startedAt > best.date || (session.startedAt === best.date && log.loggedAt > best.log.loggedAt)
+    if (newer) best = { log, date: session.startedAt }
+  }
+  return best
+}
+
 /** Message on the end screen. */
 export function finishMessage(complete: boolean, nextRoutineName: string | undefined): string {
   if (complete) return nextRoutineName ? `Routine complete, next: ${nextRoutineName}` : 'Routine complete'
@@ -128,13 +163,18 @@ export async function getLastFinishedSession(): Promise<Session | undefined> {
 }
 
 /** Most recent log of an exercise from any session, optionally ignoring one session. */
-export async function getLastLog(exerciseId: string, excludeSessionId?: string): Promise<Log | undefined> {
-  return db.logs
-    .where('[exerciseId+loggedAt]')
-    .between([exerciseId, Dexie.minKey], [exerciseId, Dexie.maxKey])
-    .reverse()
-    .filter((l) => l.sessionId !== excludeSessionId)
-    .first()
+export async function getLastLog(exerciseId: string, options: LastLogOptions = {}): Promise<LastLog | undefined> {
+  const logs = await db.logs.where('exerciseId').equals(exerciseId).toArray()
+  const ids = [...new Set(logs.map((l) => l.sessionId))]
+  const sessions = (await db.sessions.bulkGet(ids)).filter((s): s is Session => s != null)
+  return pickLastLog(logs, new Map(sessions.map((s) => [s.id, s])), options)
+}
+
+/** "Last time" for the log screen of `session`: anything but this session if it is open, else only older sessions. */
+export function lastLogOptionsFor(session: Pick<Session, 'id' | 'startedAt' | 'finishedAt'>): LastLogOptions {
+  return session.finishedAt
+    ? { excludeSessionId: session.id, before: session.startedAt }
+    : { excludeSessionId: session.id }
 }
 
 export async function getSessionLog(sessionId: string, exerciseId: string): Promise<Log | undefined> {

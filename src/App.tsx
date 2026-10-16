@@ -1,6 +1,6 @@
 import { useState } from 'react'
+import { History, type HistoryView } from './history/History'
 import { Manage } from './manage/Manage'
-import { ScreenHeader } from './manage/ui'
 import { HomeTab, type HomeView } from './session/HomeTab'
 
 type Tab = 'home' | 'history' | 'manage'
@@ -27,6 +27,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(initialTab)
   // Kept here so switching tabs mid-session returns to the same screen.
   const [homeView, setHomeView] = useState<HomeView>({ screen: 'home' })
+  const [historyView, setHistoryView] = useState<HistoryView>({ screen: 'list' })
 
   function select(next: Tab) {
     setTab(next)
@@ -42,7 +43,16 @@ export default function App() {
     <>
       <main className="shell">
         {tab === 'home' && <HomeTab view={homeView} setView={setHomeView} />}
-        {tab === 'history' && <Placeholder title="History" text="Past sessions arrive in a later build step." />}
+        {tab === 'history' && (
+          <History
+            view={historyView}
+            setView={setHistoryView}
+            onResume={() => {
+              setHomeView({ screen: 'session' })
+              select('home')
+            }}
+          />
+        )}
         {tab === 'manage' && <Manage />}
       </main>
       <nav className="tabbar" aria-label="Main">
@@ -65,11 +75,3 @@ export default function App() {
   )
 }
 
-function Placeholder({ title, text }: { title: string; text: string }) {
-  return (
-    <>
-      <ScreenHeader title={title} />
-      <p className="muted">{text}</p>
-    </>
-  )
-}

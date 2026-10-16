@@ -190,11 +190,11 @@ describe('prefillValues', () => {
     await finishSession(s2)
 
     const s3 = await startSession(r1, new Date('2026-01-03T10:00:00Z'))
-    expect(await getLastLog(e, s3)).toMatchObject({ sessionId: s2, weight: 70 })
+    expect((await getLastLog(e, { excludeSessionId: s3 }))?.log).toMatchObject({ sessionId: s2, weight: 70 })
     // While editing this session's log, "last time" still points to the previous one.
     await saveLog(s3, e, { sets: 5, repsOrSeconds: 5, weight: 80, remarks: '' }, new Date('2026-01-03T10:10:00Z'))
-    expect(await getLastLog(e, s3)).toMatchObject({ sessionId: s2 })
-    expect(await getLastLog(e)).toMatchObject({ sessionId: s3 })
+    expect((await getLastLog(e, { excludeSessionId: s3 }))?.log).toMatchObject({ sessionId: s2 })
+    expect((await getLastLog(e))?.log).toMatchObject({ sessionId: s3 })
   })
 })
 

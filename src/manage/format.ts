@@ -1,6 +1,6 @@
 import type { Exercise } from '../db'
 
-const LOAD_LABELS: Record<Exercise['loadType'], string> = {
+export const LOAD_LABELS: Record<Exercise['loadType'], string> = {
   total: 'total',
   per_dumbbell: 'per dumbbell',
   bodyweight: 'bodyweight',
