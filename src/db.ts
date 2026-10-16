@@ -53,6 +53,8 @@ export interface Session {
   cycleId: string | null
   /** Exercises added during the session that are not in its routine, in the order added. */
   extraExerciseIds?: string[]
+  /** Free text, edited from History. */
+  remarks?: string
 }
 
 export interface Log {

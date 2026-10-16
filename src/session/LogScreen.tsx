@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { db, type Exercise, type Log } from '../db'
 import { parseNumber } from '../manage/format'
 import { Field, ScreenHeader, confirmDiscard } from '../manage/ui'
-import { getLastLog, getSessionLog, prefillValues, saveLog, type LogValues } from '../session'
+import { deleteLog } from '../history'
+import { getLastLog, getSessionLog, lastLogOptionsFor, prefillValues, saveLog, type LastLog, type LogValues } from '../session'
 import { formatDate, formatLogValues } from './format'
 
 interface Draft {
@@ -36,27 +37,44 @@ function toValues(d: Draft, exercise: Exercise): LogValues | string[] {
 
 interface Loaded {
   exercise: Exercise
-  last: Log | undefined
+  last: LastLog | undefined
+  /** True when editing a finished session from History. */
+  past: boolean
   /** This session's log, when re-opening a logged exercise. */
   current: Log | undefined
 }
 
-export function LogScreen({ sessionId, exerciseId, onDone }: { sessionId: string; exerciseId: string; onDone: () => void }) {
+export function LogScreen({
+  sessionId,
+  exerciseId,
+  onDone,
+  canDelete = false,
+}: {
+  sessionId: string
+  exerciseId: string
+  onDone: () => void
+  /** Show "Delete log" for an existing log (History). */
+  canDelete?: boolean
+}) {
   const [loaded, setLoaded] = useState<Loaded | null | undefined>(undefined)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [initial, setInitial] = useState<Draft | null>(null)
   const [errors, setErrors] = useState<string[]>([])
 
   useEffect(() => {
-    void Promise.all([db.exercises.get(exerciseId), getLastLog(exerciseId, sessionId), getSessionLog(sessionId, exerciseId)]).then(
-      ([exercise, last, current]) => {
-        if (!exercise) return setLoaded(null)
-        const d = toDraft(prefillValues(exercise, current ?? last))
-        setLoaded({ exercise, last, current })
-        setDraft(d)
-        setInitial(d)
-      },
-    )
+    void (async () => {
+      const [exercise, session, current] = await Promise.all([
+        db.exercises.get(exerciseId),
+        db.sessions.get(sessionId),
+        getSessionLog(sessionId, exerciseId),
+      ])
+      if (!exercise || !session) return setLoaded(null)
+      const last = await getLastLog(exerciseId, lastLogOptionsFor(session))
+      const d = toDraft(prefillValues(exercise, current ?? last?.log))
+      setLoaded({ exercise, last, current, past: session.finishedAt != null })
+      setDraft(d)
+      setInitial(d)
+    })()
   }, [sessionId, exerciseId])
 
   if (loaded === undefined || (loaded && !draft)) return null
@@ -64,11 +82,11 @@ export function LogScreen({ sessionId, exerciseId, onDone }: { sessionId: string
     return (
       <>
         <ScreenHeader title="Exercise" onBack={onDone} />
-        <p className="muted">This exercise no longer exists.</p>
+        <p className="muted">This exercise or session no longer exists.</p>
       </>
     )
   }
-  const { exercise, last, current } = loaded
+  const { exercise, last, current, past } = loaded
   const d = draft!
   const set = (key: keyof Draft, value: string) => setDraft({ ...d, [key]: value })
   const dirty = JSON.stringify(d) !== JSON.stringify(initial)
@@ -85,6 +103,12 @@ export function LogScreen({ sessionId, exerciseId, onDone }: { sessionId: string
     onDone()
   }
 
+  async function remove() {
+    if (!current || !window.confirm(`Delete this log of ${exercise.name}? This cannot be undone.`)) return
+    await deleteLog(current.id)
+    onDone()
+  }
+
   return (
     <form onSubmit={save} noValidate>
       <ScreenHeader title={exercise.name} onBack={() => confirmDiscard(dirty) && onDone()} />
@@ -93,19 +117,19 @@ export function LogScreen({ sessionId, exerciseId, onDone }: { sessionId: string
       )}
 
       <section className="card last-time">
-        <span className="card-label">Last time</span>
+        <span className="card-label">{past ? 'Before this session' : 'Last time'}</span>
         {last ? (
           <>
-            <span className="card-title">{formatLogValues(last, exercise)}</span>
-            <span className="muted">{formatDate(last.loggedAt)}</span>
-            {last.remarks && <span className="row-sub">{last.remarks}</span>}
+            <span className="card-title">{formatLogValues(last.log, exercise)}</span>
+            <span className="muted">{formatDate(last.date)}</span>
+            {last.log.remarks && <span className="row-sub">{last.log.remarks}</span>}
           </>
         ) : (
           <span className="card-title">No previous log</span>
         )}
       </section>
 
-      {current && <p className="notice notice-ok">Logged in this session. Saving updates it.</p>}
+      {current && !past && <p className="notice notice-ok">Logged in this session. Saving updates it.</p>}
 
       <div className="field-row">
         <Field label="Sets">
@@ -139,6 +163,11 @@ export function LogScreen({ sessionId, exerciseId, onDone }: { sessionId: string
         <button type="submit" className="btn btn-primary">
           {current ? 'Save changes' : 'Save'}
         </button>
+        {canDelete && current && (
+          <button type="button" className="btn btn-danger" onClick={remove}>
+            Delete log
+          </button>
+        )}
       </div>
     </form>
   )

@@ -567,3 +567,25 @@ p.errors {
   font-size: 1.4rem;
   font-weight: 700;
 }
+
+/* ---------- History ---------- */
+
+.field input[type='date'] {
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+.field-hint {
+  margin: -8px 0 16px;
+  font-size: 0.9rem;
+}
+
+.row-values {
+  color: var(--text);
+}
+
+.row:disabled {
+  opacity: 0.6;
+}
