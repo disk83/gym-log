@@ -3,8 +3,10 @@ import { db, type Exercise, type Log } from '../db'
 import { parseNumber } from '../manage/format'
 import { Field, ScreenHeader, confirmDiscard } from '../manage/ui'
 import { deleteLog } from '../history'
+import { loadProgress, type Progress } from '../progress'
 import { getLastLog, getSessionLog, lastLogOptionsFor, prefillValues, saveLog, type LastLog, type LogValues } from '../session'
 import { formatDate, formatLogValues } from './format'
+import { ProgressChart } from './ProgressChart'
 
 interface Draft {
   sets: string
@@ -42,6 +44,8 @@ interface Loaded {
   past: boolean
   /** This session's log, when re-opening a logged exercise. */
   current: Log | undefined
+  /** Per-session trend for the small chart; undefined until there are 2 sessions. */
+  progress: Progress | undefined
 }
 
 export function LogScreen({
@@ -69,9 +73,12 @@ export function LogScreen({
         getSessionLog(sessionId, exerciseId),
       ])
       if (!exercise || !session) return setLoaded(null)
-      const last = await getLastLog(exerciseId, lastLogOptionsFor(session))
+      const [last, progress] = await Promise.all([
+        getLastLog(exerciseId, lastLogOptionsFor(session)),
+        loadProgress(exercise, session),
+      ])
       const d = toDraft(prefillValues(exercise, current ?? last?.log))
-      setLoaded({ exercise, last, current, past: session.finishedAt != null })
+      setLoaded({ exercise, last, current, progress, past: session.finishedAt != null })
       setDraft(d)
       setInitial(d)
     })()
@@ -86,7 +93,7 @@ export function LogScreen({
       </>
     )
   }
-  const { exercise, last, current, past } = loaded
+  const { exercise, last, current, past, progress } = loaded
   const d = draft!
   const set = (key: keyof Draft, value: string) => setDraft({ ...d, [key]: value })
   const dirty = JSON.stringify(d) !== JSON.stringify(initial)
@@ -128,6 +135,8 @@ export function LogScreen({
           <span className="card-title">No previous log</span>
         )}
       </section>
+
+      {progress && <ProgressChart progress={progress} />}
 
       {current && !past && <p className="notice notice-ok">Logged in this session. Saving updates it.</p>}
 
