@@ -3,9 +3,9 @@ import { sparkPoints, WINDOW, type Progress, type ProgressUnit, type TrendKind }
 const WIDTH = 112
 const HEIGHT = 36
 
-const UNIT_LABELS: Record<ProgressUnit, string> = { '1RM': 'Est. 1RM', reps: 'Reps', s: 'Seconds' }
+export const UNIT_LABELS: Record<ProgressUnit, string> = { '1RM': 'Est. 1RM', reps: 'Reps', s: 'Seconds' }
 
-function trendText(kind: TrendKind, sessionsSinceBest: number): { icon: string; text: string } {
+export function trendText(kind: TrendKind, sessionsSinceBest: number): { icon: string; text: string } {
   switch (kind) {
     case 'up':
       return { icon: '▲', text: 'Trending up' }
@@ -19,15 +19,16 @@ function trendText(kind: TrendKind, sessionsSinceBest: number): { icon: string; 
 }
 
 /** 82 → "82", 82.35 → "82.4". */
-function formatValue(value: number): string {
+export function formatValue(value: number): string {
   return String(Math.round(value * 10) / 10)
 }
 
 /**
  * A small reference for the log screen: a sparkline of the last sessions and
- * a one-line verdict. Not interactive, it only has to say up, down or stuck.
+ * a one-line verdict. It only has to say up, down or stuck; tapping it opens
+ * the full chart.
  */
-export function ProgressChart({ progress }: { progress: Progress }) {
+export function ProgressChart({ progress, onOpen }: { progress: Progress; onOpen: () => void }) {
   const { values, unit, trend } = progress
   const shown = values.slice(-WINDOW)
   const points = sparkPoints(values, WIDTH, HEIGHT)
@@ -36,7 +37,7 @@ export function ProgressChart({ progress }: { progress: Progress }) {
   const label = `${UNIT_LABELS[unit]}, last ${shown.length} sessions: ${shown.map(formatValue).join(', ')}. ${text}.`
 
   return (
-    <section className={`progress progress-${trend.kind}`} aria-label={label}>
+    <button type="button" className={`progress progress-${trend.kind}`} aria-label={`${label} Open full chart.`} onClick={onOpen}>
       <svg className="progress-spark" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} width={WIDTH} height={HEIGHT} aria-hidden="true">
         <polyline className="progress-line" points={points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')} />
         <circle className="progress-dot" cx={last.x} cy={last.y} r="3.5" />
@@ -49,6 +50,9 @@ export function ProgressChart({ progress }: { progress: Progress }) {
           {UNIT_LABELS[unit]} {formatValue(shown[shown.length - 1])} · last {shown.length} sessions
         </span>
       </div>
-    </section>
+      <span className="chevron" aria-hidden="true">
+        ›
+      </span>
+    </button>
   )
 }

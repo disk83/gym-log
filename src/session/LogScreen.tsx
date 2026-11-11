@@ -7,6 +7,7 @@ import { loadProgress, type Progress } from '../progress'
 import { getLastLog, getSessionLog, lastLogOptionsFor, prefillValues, saveLog, type LastLog, type LogValues } from '../session'
 import { formatDate, formatLogValues } from './format'
 import { ProgressChart } from './ProgressChart'
+import { ProgressSheet } from './ProgressSheet'
 
 interface Draft {
   sets: string
@@ -46,6 +47,8 @@ interface Loaded {
   current: Log | undefined
   /** Per-session trend for the small chart; undefined until there are 2 sessions. */
   progress: Progress | undefined
+  /** Start of this session: the full chart stops here. */
+  sessionStartedAt: string
 }
 
 export function LogScreen({
@@ -64,6 +67,7 @@ export function LogScreen({
   const [draft, setDraft] = useState<Draft | null>(null)
   const [initial, setInitial] = useState<Draft | null>(null)
   const [errors, setErrors] = useState<string[]>([])
+  const [chartOpen, setChartOpen] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -78,7 +82,7 @@ export function LogScreen({
         loadProgress(exercise, session),
       ])
       const d = toDraft(prefillValues(exercise, current ?? last?.log))
-      setLoaded({ exercise, last, current, progress, past: session.finishedAt != null })
+      setLoaded({ exercise, last, current, progress, sessionStartedAt: session.startedAt, past: session.finishedAt != null })
       setDraft(d)
       setInitial(d)
     })()
@@ -93,7 +97,7 @@ export function LogScreen({
       </>
     )
   }
-  const { exercise, last, current, past, progress } = loaded
+  const { exercise, last, current, past, progress, sessionStartedAt } = loaded
   const d = draft!
   const set = (key: keyof Draft, value: string) => setDraft({ ...d, [key]: value })
   const dirty = JSON.stringify(d) !== JSON.stringify(initial)
@@ -136,7 +140,8 @@ export function LogScreen({
         )}
       </section>
 
-      {progress && <ProgressChart progress={progress} />}
+      {progress && <ProgressChart progress={progress} onOpen={() => setChartOpen(true)} />}
+      {chartOpen && <ProgressSheet exerciseId={exerciseId} upTo={sessionStartedAt} onClose={() => setChartOpen(false)} />}
 
       {current && !past && <p className="notice notice-ok">Logged in this session. Saving updates it.</p>}
 

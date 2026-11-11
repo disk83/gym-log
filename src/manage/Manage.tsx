@@ -12,6 +12,7 @@ import {
   updateCycle,
   updateRoutine,
 } from '../data'
+import { ProgressSheet } from '../session/ProgressSheet'
 import { ExerciseForm } from './ExerciseForm'
 import { OrderedForm } from './OrderedForm'
 import { ReportScreen } from './ReportScreen'
@@ -136,13 +137,26 @@ function ListShell<T extends { id: string; archived: boolean }>({
 
 function ExerciseList({ onOpen }: { onOpen: (id?: string) => void }) {
   const exercises = useLiveQuery(() => db.exercises.toArray().then((l) => l.sort(byName)))
+  const [chartFor, setChartFor] = useState<string | undefined>(undefined)
   return (
-    <ListShell
-      items={exercises}
-      noun="exercise"
-      onOpen={onOpen}
-      toRow={(e) => ({ id: e.id, title: e.name, sub: exerciseSummary(e) })}
-    />
+    <>
+      <ListShell
+        items={exercises}
+        noun="exercise"
+        onOpen={onOpen}
+        toRow={(e) => ({
+          id: e.id,
+          title: e.name,
+          sub: exerciseSummary(e),
+          action: (
+            <button type="button" className="btn btn-small" onClick={() => setChartFor(e.id)}>
+              Progress
+            </button>
+          ),
+        })}
+      />
+      {chartFor && <ProgressSheet exerciseId={chartFor} onClose={() => setChartFor(undefined)} />}
+    </>
   )
 }
 

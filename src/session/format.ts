@@ -17,3 +17,12 @@ export function formatLogValues(log: Pick<Log, 'sets' | 'repsOrSeconds' | 'weigh
   const weight = log.weight != null ? ` @ ${log.weight}${perDumbbell}` : ''
   return `${log.sets} × ${reps}${weight}`
 }
+
+/** e.g. "13 Oct", or "13 Oct 26" when the year is needed. */
+export function formatShortDate(iso: string, withYear = false): string {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(withYear ? { year: '2-digit' } : {}),
+  })
+}
