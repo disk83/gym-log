@@ -61,9 +61,20 @@ export function trendOf(values: readonly number[]): Trend | undefined {
   return { kind, sessionsSinceBest }
 }
 
+export interface ProgressPoint {
+  /** Start of the session (ISO). */
+  date: string
+  value: number
+  sets: number
+  repsOrSeconds: number
+  weight?: number
+}
+
 export interface Progress {
   unit: ProgressUnit
-  /** One value per session, oldest first; all of the history, not just the window. */
+  /** One point per session, oldest first; all of the history, not just the window. */
+  points: ProgressPoint[]
+  /** The value of each point, oldest first. */
   values: number[]
   trend: Trend
 }
@@ -80,24 +91,29 @@ export function buildProgress(
   exercise: Exercise,
   upTo?: string,
 ): Progress | undefined {
-  const points: { startedAt: string; loggedAt: string; value: number }[] = []
+  const found: { point: ProgressPoint; loggedAt: string }[] = []
   for (const log of logs) {
     const session = sessions.get(log.sessionId)
     if (!session || (upTo != null && session.startedAt > upTo)) continue
     const value = progressValue(log, exercise)
-    if (value != null) points.push({ startedAt: session.startedAt, loggedAt: log.loggedAt, value })
+    if (value == null) continue
+    const point: ProgressPoint = { date: session.startedAt, value, sets: log.sets, repsOrSeconds: log.repsOrSeconds }
+    if (log.weight != null) point.weight = log.weight
+    found.push({ point, loggedAt: log.loggedAt })
   }
-  points.sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.loggedAt.localeCompare(b.loggedAt))
+  found.sort((a, b) => a.point.date.localeCompare(b.point.date) || a.loggedAt.localeCompare(b.loggedAt))
+  const points = found.map((f) => f.point)
   const values = points.map((p) => p.value)
   const trend = trendOf(values)
-  return trend && { unit: progressUnit(exercise), values, trend }
+  return trend && { unit: progressUnit(exercise), points, values, trend }
 }
 
-export async function loadProgress(exercise: Exercise, session: Pick<Session, 'startedAt'>): Promise<Progress | undefined> {
+/** Progress up to `session` (the whole history when omitted). */
+export async function loadProgress(exercise: Exercise, session?: Pick<Session, 'startedAt'>): Promise<Progress | undefined> {
   const logs = await db.logs.where('exerciseId').equals(exercise.id).toArray()
   const ids = [...new Set(logs.map((l) => l.sessionId))]
   const sessions = (await db.sessions.bulkGet(ids)).filter((s): s is Session => s != null)
-  return buildProgress(logs, new Map(sessions.map((s) => [s.id, s])), exercise, session.startedAt)
+  return buildProgress(logs, new Map(sessions.map((s) => [s.id, s])), exercise, session?.startedAt)
 }
 
 // ---------- Sparkline geometry ----------
@@ -122,4 +138,43 @@ export function sparkPoints(values: readonly number[], width: number, height: nu
     x: pad + (shown.length === 1 ? innerW / 2 : (i / (shown.length - 1)) * innerW),
     y: pad + (max === min ? innerH / 2 : (1 - (v - min) / (max - min)) * innerH),
   }))
+}
+
+// ---------- Full chart axes ----------
+
+export interface Scale {
+  min: number
+  max: number
+  ticks: number[]
+}
+
+/**
+ * A y axis with round tick values that covers [min, max], about `target`
+ * ticks. With `integer` the step is a whole number (reps, seconds). A single
+ * value (min equals max) gets some room above and below.
+ */
+export function niceScale(min: number, max: number, target = 5, integer = false): Scale {
+  if (min === max) {
+    const pad = integer ? 1 : Math.max(Math.abs(min) * 0.05, 1)
+    min -= pad
+    max += pad
+  }
+  const raw = Math.max((max - min) / (target - 1), integer ? 1 : 0)
+  const magnitude = 10 ** Math.floor(Math.log10(raw))
+  const normalized = raw / magnitude
+  const options = integer ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10]
+  const step = (options.find((o) => normalized <= o) ?? 10) * magnitude
+  const lo = Math.floor(min / step + 1e-9) * step
+  const hi = Math.ceil(max / step - 1e-9) * step
+  const count = Math.round((hi - lo) / step)
+  const ticks = Array.from({ length: count + 1 }, (_, i) => Number((lo + i * step).toFixed(10)))
+  return { min: ticks[0], max: ticks[ticks.length - 1], ticks }
+}
+
+/** Which of `count` x positions get a date label: at most `max`, evenly spread, first and last included. */
+export function labelIndices(count: number, max = 5): number[] {
+  if (count <= max) return Array.from({ length: count }, (_, i) => i)
+  const picked = new Set<number>()
+  for (let i = 0; i < max; i++) picked.add(Math.round((i * (count - 1)) / (max - 1)))
+  return [...picked]
 }

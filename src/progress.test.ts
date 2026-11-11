@@ -4,7 +4,9 @@ import { createExercise, type ExerciseInput } from './data'
 import { db, type Exercise, type Log, type Session } from './db'
 import {
   buildProgress,
+  labelIndices,
   loadProgress,
+  niceScale,
   progressUnit,
   progressValue,
   sparkPoints,
@@ -118,6 +120,16 @@ describe('buildProgress', () => {
     expect(progress?.trend.kind).toBe('flat')
   })
 
+  it('keeps date, sets, reps and weight of each session', () => {
+    const progress = buildProgress(logs, sessions, exercise())
+    expect(progress?.points[0]).toEqual({ date: '2026-02-01T09:00:00Z', value: 80, sets: 3, repsOrSeconds: 10, weight: 60 })
+    expect(progress?.points.map((p) => p.date)).toEqual([
+      '2026-02-01T09:00:00Z',
+      '2026-02-08T09:00:00Z',
+      '2026-02-15T09:00:00Z',
+    ])
+  })
+
   it('ignores sessions after upTo, so an old session does not see the future', () => {
     expect(buildProgress(logs, sessions, exercise(), '2026-02-08T09:00:00Z')?.values).toEqual([80, 84])
     expect(buildProgress(logs, sessions, exercise(), '2026-02-01T09:00:00Z')).toBeUndefined()
@@ -178,5 +190,52 @@ describe('loadProgress', () => {
     expect((await loadProgress(ex, (await db.sessions.get(s3))!))?.values).toEqual([80, 83.3])
     // Looking at the first session alone: nothing to compare.
     expect(await loadProgress(ex, (await db.sessions.get(s1))!)).toBeUndefined()
+  })
+})
+
+describe('niceScale', () => {
+  it('rounds the axis out to round tick values', () => {
+    expect(niceScale(80, 91.8)).toEqual({ min: 80, max: 95, ticks: [80, 85, 90, 95] })
+    expect(niceScale(60, 62.5).ticks).toEqual([60, 61, 62, 63])
+  })
+
+  it('uses whole-number steps for reps and seconds', () => {
+    expect(niceScale(8, 14, 5, true).ticks).toEqual([8, 10, 12, 14])
+    expect(niceScale(10, 10, 5, true).ticks).toEqual([9, 10, 11])
+    expect(niceScale(10, 11, 5, true).ticks.every(Number.isInteger)).toBe(true)
+  })
+
+  it('gives a single value some room', () => {
+    const scale = niceScale(80, 80)
+    expect(scale.min).toBeLessThan(80)
+    expect(scale.max).toBeGreaterThan(80)
+  })
+
+  it('always covers the data with a sensible number of ticks', () => {
+    for (const [min, max] of [[0, 1], [12.3, 12.9], [100, 400], [37.5, 41.2], [5, 5.5], [1000, 1010]]) {
+      const scale = niceScale(min, max)
+      expect(scale.min).toBeLessThanOrEqual(min)
+      expect(scale.max).toBeGreaterThanOrEqual(max)
+      expect(scale.ticks.length).toBeGreaterThanOrEqual(2)
+      expect(scale.ticks.length).toBeLessThanOrEqual(9)
+      expect(scale.ticks).toEqual([...scale.ticks].sort((a, b) => a - b))
+    }
+  })
+})
+
+describe('labelIndices', () => {
+  it('labels every point when there are few', () => {
+    expect(labelIndices(2)).toEqual([0, 1])
+    expect(labelIndices(5)).toEqual([0, 1, 2, 3, 4])
+  })
+
+  it('keeps first and last and at most 5 labels otherwise', () => {
+    for (let n = 6; n <= 80; n++) {
+      const picked = labelIndices(n)
+      expect(picked[0]).toBe(0)
+      expect(picked[picked.length - 1]).toBe(n - 1)
+      expect(picked.length).toBeLessThanOrEqual(5)
+      expect(picked).toEqual([...new Set(picked)].sort((a, b) => a - b))
+    }
   })
 })

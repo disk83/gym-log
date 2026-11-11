@@ -567,6 +567,11 @@ p.errors {
 
 .progress {
   --trend: var(--muted);
+  width: 100%;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -591,6 +596,10 @@ p.errors {
 
 .progress-spark {
   flex: none;
+}
+
+.progress .chevron {
+  margin-left: auto;
 }
 
 .progress-line {
@@ -686,4 +695,112 @@ p.errors {
 
 .storage-status {
   margin-top: 24px;
+}
+
+/* ---------- Full progress chart (sheet) ---------- */
+
+.pchart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 8px 0 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pchart-axis-title,
+.pchart-tick {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+.pchart-axis-title {
+  font-weight: 600;
+}
+
+.pchart-grid {
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+.pchart-axis {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.pchart-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pchart-dot {
+  fill: var(--surface-2);
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.pchart-dot-selected {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.pchart-best {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 1.5;
+}
+
+.pchart-value {
+  fill: var(--text);
+  font-size: 10px;
+}
+
+.pchart-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.pchart-verdict {
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--trend, var(--muted));
+}
+
+.pchart-legend {
+  margin: 4px 0 12px;
+  font-size: 0.8rem;
+}
+
+.pchart-readout {
+  gap: 4px;
+}
+
+.pchart-up {
+  color: var(--accent);
+}
+
+.pchart-down {
+  color: var(--danger);
+}
+
+.pchart-step {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pchart-list-title {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+}
+
+.pchart-row-selected {
+  border-color: var(--accent);
+}
+
+.pchart-row-value {
+  font-weight: 600;
 }
