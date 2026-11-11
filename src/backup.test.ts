@@ -108,6 +108,22 @@ describe('export and import round trip', () => {
     expect(names).toEqual(['Bench press', 'Curl', 'Plank'])
   })
 
+  it('adds est1RM to strength logs with a weight, and import does not store it', async () => {
+    await seed()
+    const text = await exportedText()
+    const logs = JSON.parse(text).tables.logs as { exerciseId: string; weight?: number; est1RM?: number }[]
+    // seed: bench 72.5 x 8 and 60 x 10; plank is timed with no weight.
+    const estimates = logs.map((l) => l.est1RM).filter((e): e is number => e != null)
+    expect(estimates.sort((a, b) => a - b)).toEqual([80, 91.8])
+    expect(logs.filter((l) => l.est1RM == null)).toHaveLength(1)
+
+    await Promise.all(db.tables.map((t) => t.clear()))
+    const result = parseBackup(text)
+    if (!result.ok) throw new Error(result.error)
+    await importBackup(result.backup)
+    for (const log of await db.logs.toArray()) expect(log).not.toHaveProperty('est1RM')
+  })
+
   it('names the file after the local export date', () => {
     expect(backupFileName(new Date(2026, 9, 6, 23, 30))).toBe('gym-backup-2026-10-06.json')
   })
