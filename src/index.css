@@ -13,6 +13,7 @@
   --accent: #22c55e;
   --accent-text: #052e16;
   --danger: #f87171;
+  --warn: #fbbf24;
   --tabbar-h: 64px;
   --tap: 48px;
 }
@@ -560,6 +561,64 @@ p.errors {
 
 .last-time {
   border-left: 4px solid var(--accent);
+}
+
+/* ---------- Progress sparkline (log screen) ---------- */
+
+.progress {
+  --trend: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.progress-up {
+  --trend: var(--accent);
+}
+
+.progress-down {
+  --trend: var(--danger);
+}
+
+.progress-stalled {
+  --trend: var(--warn);
+}
+
+.progress-spark {
+  flex: none;
+}
+
+.progress-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.progress-dot {
+  fill: var(--trend);
+}
+
+.progress-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.progress-verdict {
+  color: var(--trend);
+  font-weight: 600;
+}
+
+.progress-sub {
+  font-size: 0.75rem;
 }
 
 .finish-message {
