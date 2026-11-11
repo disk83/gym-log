@@ -1,6 +1,7 @@
 import { db, type Exercise, type Log, type Routine, type Session } from './db'
 import { logsInOrder, toDateInput } from './history'
 import { LOAD_LABELS } from './manage/format'
+import { estimated1RM } from './strength'
 import { buildXlsx, excelDate, XLSX_MIME, type Cell, type Column } from './xlsx'
 
 // Trainer report (spec section 5): every log of the sessions started in a
@@ -61,6 +62,8 @@ export interface ReportRow {
   sets: number
   repsOrSeconds: number
   weight?: number
+  /** Estimated one-rep max (Epley), for strength logs with a weight. */
+  est1RM?: number
   loadType: string
   remarks: string
 }
@@ -115,6 +118,8 @@ export function buildReport(data: ReportData, start: string, end: string): Repor
         remarks: log.remarks,
       }
       if (log.weight != null) row.weight = log.weight
+      const est = estimated1RM(log, exercise)
+      if (est != null) row.est1RM = est
       rows.push(row)
     }
   }
@@ -155,6 +160,7 @@ export const REPORT_COLUMNS: Column[] = [
   { header: 'Sets', width: 6 },
   { header: 'Reps or seconds', width: 16 },
   { header: 'Weight', width: 9 },
+  { header: 'Est. 1RM', width: 10 },
   { header: 'Load type', width: 14 },
   { header: 'Remarks', width: 40 },
 ]
@@ -170,6 +176,7 @@ export function reportCells(row: ReportRow): Cell[] {
     row.sets,
     row.repsOrSeconds,
     row.weight,
+    row.est1RM,
     row.loadType,
     row.remarks,
   ]

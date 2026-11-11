@@ -1,3 +1,4 @@
+import { estimated1RM } from './strength'
 import { db, type Cycle, type Exercise, type Log, type Routine, type Session, type Setting } from './db'
 
 // JSON backup (spec section 6): every table plus a format version, and a
@@ -42,8 +43,21 @@ export async function readAllTables(): Promise<BackupTables> {
   })
 }
 
+/**
+ * Adds the estimated 1RM to each log that has one. It is derived data, only
+ * there to make the file useful to read or chart: import drops it again.
+ */
+function withEstimates(tables: BackupTables): BackupTables {
+  const exercises = new Map(tables.exercises.map((e) => [e.id, e]))
+  const logs = tables.logs.map((log) => {
+    const est1RM = estimated1RM(log, exercises.get(log.exerciseId))
+    return est1RM == null ? log : { ...log, est1RM }
+  })
+  return { ...tables, logs }
+}
+
 export function makeBackup(tables: BackupTables, now = new Date()): Backup {
-  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: now.toISOString(), tables }
+  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: now.toISOString(), tables: withEstimates(tables) }
 }
 
 export function backupFileName(now = new Date()): string {
@@ -105,7 +119,7 @@ const SCHEMA: Record<TableName, Fields> = {
       remarks: 'string',
       loggedAt: 'string',
     },
-    optional: { weight: 'number' },
+    optional: { weight: 'number', est1RM: 'number' },
   },
   settings: { required: { key: 'string', value: 'any' } },
 }
@@ -199,6 +213,12 @@ export function tableCounts(tables: BackupTables): Record<TableName, number> {
 
 // ---------- Import ----------
 
+/** Drop the derived est1RM field so it is never stored in the database. */
+function withoutEstimate(log: Log): Log {
+  const { est1RM: _derived, ...rest } = log as Log & { est1RM?: number }
+  return rest
+}
+
 /**
  * Replace all data with the backup's, in a single transaction: if anything
  * fails, the transaction aborts and the existing data stays as it was.
@@ -210,7 +230,7 @@ export async function importBackup(backup: Backup): Promise<void> {
     for (const name of TABLE_NAMES) {
       const table = db.table(name)
       await table.clear()
-      await table.bulkAdd(backup.tables[name])
+      await table.bulkAdd(name === 'logs' ? backup.tables.logs.map(withoutEstimate) : backup.tables[name])
     }
   })
 }

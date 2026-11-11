@@ -131,6 +131,7 @@ describe('report rows', () => {
         sets: 4,
         repsOrSeconds: 8,
         weight: 70,
+        est1RM: 88.7,
         loadType: 'total',
         remarks: 'hard',
       },
@@ -154,6 +155,7 @@ describe('report rows', () => {
         sets: 3,
         repsOrSeconds: 12,
         weight: 12,
+        est1RM: 16.8,
         loadType: 'per dumbbell',
         remarks: 'easy',
       },
@@ -182,6 +184,7 @@ describe('xlsx file', () => {
       sets: 4,
       repsOrSeconds: 8,
       weight: 72.5,
+      est1RM: 91.8,
       loadType: 'total',
       remarks: 'hard',
     }
@@ -195,14 +198,16 @@ describe('xlsx file', () => {
     const strings = strFromU8(zip['xl/sharedStrings.xml'])
 
     expect(sheet).toContain('<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>')
-    expect(sheet).toContain('<col min="10" max="10" width="40" customWidth="1"/>')
+    expect(sheet).toContain('<col min="11" max="11" width="40" customWidth="1"/>')
     expect(sheet).toContain('<c r="A2" s="2"><v>46064</v></c>')
     expect(sheet).toContain('<c r="B2"><v>1</v></c>')
     expect(sheet).toContain('<c r="F2"><v>4</v></c>')
     expect(sheet).toContain('<c r="G2"><v>8</v></c>')
     expect(sheet).toContain('<c r="H2"><v>72.5</v></c>')
-    expect(sheet).toContain('<autoFilter ref="A1:J2"/>')
+    expect(sheet).toContain('<c r="I2"><v>91.8</v></c>')
+    expect(sheet).toContain('<autoFilter ref="A1:K2"/>')
     expect(strings).toContain('Reps or seconds')
+    expect(strings).toContain('Est. 1RM')
     expect(strings).toContain('Bench &lt;press&gt;')
     expect(strings).toContain('Push &amp; pull')
   })
