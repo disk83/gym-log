@@ -77,7 +77,7 @@ Rules:
 3. **Exercise log**: fields, last time, save.
 4. **History**: sessions by date, with session detail and edit.
 5. **Manage**: lists with create, edit and archive for exercises, routines (ordered exercises, drag to reorder) and cycles (ordered routines, set active).
-6. **Report and backup**: date range picker, "Generate Excel" and "Share" (section 5), "Export backup", "Import backup".
+6. **Report and backup**: date range picker, "Generate Excel" and "Share" (section 5), "Generate progress PDF" (section 5b), "Export backup", "Import backup".
 
 ## 5. Trainer report
 
@@ -85,6 +85,37 @@ Rules:
 - Output: a single `.xlsx` file, one row per log, sorted by date.
 - Columns: Date, Session, Routine, Exercise, Machine, Sets, Reps or seconds, Weight, Load type, Remarks.
 - Sharing: use the Web Share API with the file (iOS share sheet). If it is not available or fails, fall back to a normal download.
+
+## 5b. Progress report (PDF)
+
+A readable companion to the Excel report, which stays as it is (full detail, one row per log). One button builds a single PDF with a cover page and one page per exercise, so anyone can see at a glance how training is going.
+
+**Trigger**
+- On the Report screen, below the Excel button: "Generate progress PDF". It uses the same date range picker, plus shortcuts "3 months", "6 months" and "All".
+- Shows progress while building ("Page 3 of 18"). It runs entirely on the phone, offline, from local data.
+- Output is shared with `shareOrDownload` (same as the Excel report), MIME `application/pdf`, file name `gym-progress_<start>_<end>.pdf`.
+- If there are no logs in the range, show a message and create no file.
+
+**Which exercises, in what order**
+- Every exercise with at least one log in the range, archived ones included.
+- Order: follow the active cycle (routines in order, exercises in each routine's order, first appearance wins). Exercises not in the active cycle go at the end, alphabetically.
+
+**Cover page**
+- Title, date range, generation date.
+- Totals: finished sessions in the range, exercises with data, and how many are rising, flat, stalled or falling (using `trendOf` from `progress.ts`).
+- A table with one row per exercise: name, latest value, trend arrow, so the cover works as an index.
+
+**Exercise page** (one per exercise, always one page)
+- Header: name, machine, type and load type (so "20 kg" is clearly per dumbbell or total), the routines it belongs to, remarks.
+- Key numbers: sessions in range, first and latest date, first to latest weight with the change, best weight, best progress value (estimated 1RM for strength, reps for bodyweight, seconds for timed; same definitions as `progress.ts`), and the trend in words (e.g. "Stalled for 4 sessions").
+- Chart: the full range, not only the last 8 sessions. One point per session. Strength exercises with weight draw weight and estimated 1RM as two lines with a legend. Other exercises draw their single progress value. Axes use `niceScale` and `labelIndices`, with the value printed at each point. Drawn as vector graphics.
+- Table of the last 8 sessions: date, sets × reps or seconds, weight, estimated 1RM, remarks.
+- An exercise with a single session in the range still gets a page, with one point and the trend shown as "Not enough data".
+
+**Implementation rules**
+- Data model in `src/progressReport.ts`, a pure function over the same inputs as `buildReport`, reusing `progress.ts` so the PDF and the in-app chart always agree. Unit-tested.
+- PDF writing in `src/pdf.ts`, a minimal writer with no new dependency (like `xlsx.ts`): A4 portrait, built-in Helvetica, lines, rectangles and text. Characters outside the standard Latin set are replaced by "?". If this proves too limiting, fall back to jsPDF.
+- Nothing is stored. The PDF is always generated from history.
 
 ## 6. Backup
 
@@ -106,7 +137,7 @@ Rules:
 2. Manage screens: exercises, routines, cycles.
 3. Session flow: home, start, log, finish, next-routine suggestion.
 4. History and editing.
-5. Report (xlsx) and backup (JSON).
+5. Report (xlsx), progress report (PDF) and backup (JSON).
 6. Deploy to GitHub Pages, install on the iPhone, test at the gym, fix what shows up.
 
 ## 9. Acceptance checks
@@ -116,6 +147,9 @@ Rules:
 - Logging an exercise a second time prefills the previous values and shows "last time".
 - Finishing the last routine of the cycle suggests the first routine again.
 - The Excel report for a date range opens in Excel and Numbers with the right rows.
+- The progress PDF for a date range opens in the iOS file viewer with one cover page plus one page per exercise that has logs, in cycle order.
+- The numbers and trend on each PDF page match the in-app progress chart for the same exercise.
+- The PDF generates in airplane mode, and in a few seconds for about 30 exercises over 6 months.
 - Export backup, wipe, import backup: everything is restored.
 
 ## 10. Later (not in the MVP)
