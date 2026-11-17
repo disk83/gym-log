@@ -668,6 +668,10 @@ p.errors {
   margin-top: 8px;
 }
 
+.range-shortcuts {
+  margin-bottom: 8px;
+}
+
 .notice-warn {
   margin: 0 0 16px;
   border-left: 4px solid #f59e0b;
