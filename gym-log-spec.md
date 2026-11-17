@@ -93,7 +93,7 @@ A readable companion to the Excel report, which stays as it is (full detail, one
 **Trigger**
 - On the Report screen, below the Excel button: "Generate progress PDF". It uses the same date range picker, plus shortcuts "3 months", "6 months" and "All".
 - Shows progress while building ("Page 3 of 18"). It runs entirely on the phone, offline, from local data.
-- Output is shared with `shareOrDownload` (same as the Excel report), MIME `application/pdf`, file name `gym-progress_<start>_<end>.pdf`.
+- The PDF is built first and then shared with a separate "Share" tap (the same "Ready" card as the Excel report), because the iOS share sheet must open straight from a tap, and building takes a moment. It uses `shareOrDownload`, MIME `application/pdf`, file name `gym-progress-<start>_to_<end>.pdf`.
 - If there are no logs in the range, show a message and create no file.
 
 **Which exercises, in what order**
@@ -102,12 +102,12 @@ A readable companion to the Excel report, which stays as it is (full detail, one
 
 **Cover page**
 - Title, date range, generation date.
-- Totals: finished sessions in the range, exercises with data, and how many are rising, flat, stalled or falling (using `trendOf` from `progress.ts`).
-- A table with one row per exercise: name, latest value, trend arrow, so the cover works as an index.
+- Totals: sessions with logs in the range (like the Excel report), exercises with data, and how many are rising, flat, stalled or falling (using `trendOf` from `progress.ts`).
+- A table with one row per exercise: name, latest session, trend, page number, so the cover works as an index. With more than 28 exercises the index continues on extra pages.
 
 **Exercise page** (one per exercise, always one page)
 - Header: name, machine, type and load type (so "20 kg" is clearly per dumbbell or total), the routines it belongs to, remarks.
-- Key numbers: sessions in range, first and latest date, first to latest weight with the change, best weight, best progress value (estimated 1RM for strength, reps for bodyweight, seconds for timed; same definitions as `progress.ts`), and the trend in words (e.g. "Stalled for 4 sessions").
+- Trend in words (same texts as the in-app chart, e.g. "No new best in 4 sessions") and six summary tiles: sessions with first and latest date; first to latest weight with the change, and best weight (exercises without weights show the first and latest session instead); best, latest and change of the progress value (estimated 1RM for strength, reps for bodyweight, seconds for timed; same definitions as `progress.ts`).
 - Chart: the full range, not only the last 8 sessions. One point per session. Strength exercises with weight draw weight and estimated 1RM as two lines with a legend. Other exercises draw their single progress value. Axes use `niceScale` and `labelIndices`, with the value printed at each point. Drawn as vector graphics.
 - Table of the last 8 sessions: date, sets × reps or seconds, weight, estimated 1RM, remarks.
 - An exercise with a single session in the range still gets a page, with one point and the trend shown as "Not enough data".
@@ -148,7 +148,7 @@ A readable companion to the Excel report, which stays as it is (full detail, one
 - Finishing the last routine of the cycle suggests the first routine again.
 - The Excel report for a date range opens in Excel and Numbers with the right rows.
 - The progress PDF for a date range opens in the iOS file viewer with one cover page plus one page per exercise that has logs, in cycle order.
-- The numbers and trend on each PDF page match the in-app progress chart for the same exercise.
+- With the range "All", the numbers and trend on each PDF page match the in-app progress chart for the same exercise. (For a shorter range, trend and change are computed from that range only.)
 - The PDF generates in airplane mode, and in a few seconds for about 30 exercises over 6 months.
 - Export backup, wipe, import backup: everything is restored.
 

@@ -10,12 +10,20 @@ import {
   tableCounts,
   type Backup,
 } from '../backup'
+import { progressReportFile } from '../progressPdf'
+import {
+  earliestSession,
+  loadProgressReport,
+  presetRange,
+  type RangePreset,
+} from '../progressReport'
 import { defaultRange, loadReport, previewText, rangeBounds, reportFile } from '../report'
 import { formatDate } from '../session/format'
 import { shareOrDownload, type ShareOutcome } from '../share'
 import { Field } from './ui'
 
-// Manage → Report: the trainer report (spec section 5) and backup (section 6).
+// Manage → Report: the trainer report (spec section 5), the progress PDF
+// (section 5b) and backup (section 6).
 
 export function ReportScreen() {
   return (
@@ -35,10 +43,22 @@ function outcomeText(outcome: ShareOutcome, name: string): string {
 
 // ---------- Report ----------
 
+const PRESETS: { id: RangePreset; label: string }[] = [
+  { id: '3m', label: '3 months' },
+  { id: '6m', label: '6 months' },
+  { id: 'all', label: 'All' },
+]
+
 function ReportSection() {
   const [range, setRange] = useState(defaultRange)
   const [file, setFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  /** Progress text while the PDF is being built. */
+  const [building, setBuilding] = useState<string | null>(null)
+  /** Bumped whenever the range changes or a build starts, so an outdated build is ignored. */
+  const run = useRef(0)
+  const earliest = useLiveQuery(earliestSession)
 
   let rangeError = ''
   try {
@@ -52,15 +72,50 @@ function ReportSection() {
   )
 
   function change(next: Partial<typeof range>) {
+    run.current++
     setRange({ ...range, ...next })
     setFile(null)
     setMessage('')
+    setError('')
+    setBuilding(null)
   }
+
+  const now = new Date()
+  const activePreset = PRESETS.find((p) => {
+    const r = presetRange(p.id, now, earliest)
+    return r.start === range.start && r.end === range.end
+  })?.id
 
   function generate() {
     if (!report || report.rows.length === 0) return
     setFile(reportFile(report, range.start, range.end))
     setMessage('')
+    setError('')
+  }
+
+  async function generatePdf() {
+    if (building != null || rangeError) return
+    const id = ++run.current
+    setFile(null)
+    setMessage('')
+    setError('')
+    setBuilding('Preparing…')
+    try {
+      const data = await loadProgressReport(range.start, range.end)
+      if (id !== run.current) return
+      if (data.pages.length === 0) {
+        setError('No exercises were logged in this range. Choose other dates.')
+        return
+      }
+      const pdf = await progressReportFile(data, (done, total) => {
+        if (id === run.current) setBuilding(`Building page ${done} of ${total}…`)
+      })
+      if (id === run.current) setFile(pdf)
+    } catch (e) {
+      if (id === run.current) setError(`Could not build the PDF. ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      if (id === run.current) setBuilding(null)
+    }
   }
 
   async function share() {
@@ -82,6 +137,19 @@ function ReportSection() {
           <input type="date" value={range.end} min={range.start} onChange={(e) => change({ end: e.target.value })} />
         </Field>
       </div>
+      <div className="segmented range-shortcuts" role="group" aria-label="Date range shortcuts">
+        {PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={activePreset === p.id ? 'seg on' : 'seg'}
+            aria-pressed={activePreset === p.id}
+            onClick={() => change(presetRange(p.id, new Date(), earliest))}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
       {rangeError ? (
         <p className="errors" role="alert">
           {rangeError}
@@ -94,6 +162,14 @@ function ReportSection() {
       <button type="button" className="btn btn-primary btn-wide" disabled={!report || !!empty || !!rangeError} onClick={generate}>
         Generate Excel
       </button>
+      <button
+        type="button"
+        className="btn btn-primary btn-wide"
+        disabled={!report || !!empty || !!rangeError || building != null}
+        onClick={generatePdf}
+      >
+        {building ?? 'Generate progress PDF'}
+      </button>
       {file && (
         <section className="card file-card">
           <span className="card-label">Ready</span>
@@ -102,6 +178,11 @@ function ReportSection() {
             Share
           </button>
         </section>
+      )}
+      {error && (
+        <p className="errors" role="alert">
+          {error}
+        </p>
       )}
       {message && <p className="notice notice-ok">{message}</p>}
     </>
